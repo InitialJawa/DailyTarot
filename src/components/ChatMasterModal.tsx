@@ -61,7 +61,9 @@ export function ChatMasterModal({ reading, isOpen, onClose, onSaveHistory }: Cha
             cards: reading.cards.map(c => c.name).join(', ')
           },
           message: userMsg.content,
-          chatHistory: messages.map(m => ({ role: m.role, content: m.content }))
+          chatHistory: messages
+            .filter(m => !m.content.includes("Maaf, energi saat ini sedang tidak stabil"))
+            .map(m => ({ role: m.role, content: m.content }))
         })
       });
 

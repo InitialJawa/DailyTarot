@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Volume2, VolumeX } from 'lucide-react';
+import { Volume2, VolumeX, X } from 'lucide-react';
 
 export function AudioPlayer({ enabled }: { enabled: boolean }) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(enabled);
+  const [isHidden, setIsHidden] = useState(false);
 
   useEffect(() => {
     if (!audioRef.current) return;
@@ -20,13 +21,24 @@ export function AudioPlayer({ enabled }: { enabled: boolean }) {
 
   useEffect(() => {
     setIsPlaying(enabled);
+    if (enabled) {
+      setIsHidden(false);
+    }
   }, [enabled]);
+
+  if (isHidden) {
+    return (
+      <audio 
+        ref={audioRef} 
+        src="https://upload.wikimedia.org/wikipedia/commons/0/05/Nature_sounds_-_birds%2C_wind%2C_stream_-_1_min.ogg" 
+        loop
+      />
+    );
+  }
 
   return (
     <div 
-       className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 p-3 bg-bg-primary/90 backdrop-blur border border-text-secondary/10 rounded-xl shadow-xl flex items-center gap-4 hover:shadow-2xl hover:-translate-y-1 transition-all cursor-pointer" 
-       onClick={() => setIsPlaying(!isPlaying)}
-       title="Toggle Audio"
+       className="fixed bottom-6 left-6 md:bottom-8 md:left-8 z-50 p-3 bg-bg-primary/90 backdrop-blur border border-text-secondary/10 rounded-xl shadow-xl flex items-center gap-4 transition-all" 
     >
       <audio 
         ref={audioRef} 
@@ -34,7 +46,11 @@ export function AudioPlayer({ enabled }: { enabled: boolean }) {
         loop
       />
       
-      <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${isPlaying ? 'bg-text-secondary text-bg-primary' : 'bg-text-secondary/10 text-text-secondary'}`}>
+      <div 
+        className={`w-8 h-8 cursor-pointer rounded-full flex items-center justify-center transition-colors ${isPlaying ? 'bg-text-secondary text-bg-primary hover:bg-text-secondary/80' : 'bg-text-secondary/10 text-text-secondary hover:bg-text-secondary/20'}`}
+        onClick={() => setIsPlaying(!isPlaying)}
+        title="Toggle Audio"
+      >
         {isPlaying ? <Volume2 size={14} /> : <VolumeX size={14} />}
       </div>
       
@@ -51,6 +67,16 @@ export function AudioPlayer({ enabled }: { enabled: boolean }) {
           <div className="w-1 h-3 bg-text-secondary/60 rounded-full animate-pulse" style={{ animationDelay: '450ms' }}></div>
         </div>
       )}
+
+      <div className="pl-2 border-l border-text-secondary/10 flex items-center ml-auto">
+        <button 
+          onClick={() => setIsHidden(true)}
+          className="text-text-secondary hover:text-text-primary transition-colors p-1"
+          title="Sembunyikan Pemutar"
+        >
+          <X size={12} />
+        </button>
+      </div>
     </div>
   );
 }

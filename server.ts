@@ -165,26 +165,39 @@ Berbicaralah selayaknya seorang Master Tarot yang sedang duduk bersama mereka.
 Gunakan bahasa Indonesia yang empatik, sedikit puitis namun tetap membumi dan membantu.
 Tuliskan balasan dalam format Markdown.`;
 
-      const contents = [];
+      const rawContents = [];
       
       if (chatHistory && chatHistory.length > 0) {
         for (const msg of chatHistory) {
-          contents.push({
+          rawContents.push({
             role: msg.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: msg.content }]
           });
         }
       }
 
-      contents.push({
+      rawContents.push({
         role: "user",
         parts: [{ text: message }]
       });
 
+      // Ensure alternating roles to avoid 400 Bad Request
+      const contents = [];
+      let lastRole = null;
+      for (const item of rawContents) {
+        if (item.role !== lastRole) {
+          contents.push({ role: item.role, parts: [...item.parts] });
+          lastRole = item.role;
+        } else {
+          // Flatten adjacent parts
+          contents[contents.length - 1].parts.push({ text: "\n\n" }, ...item.parts);
+        }
+      }
+
       const modelsToTry = [
-        "gemini-2.5-flash-lite",
         "gemini-2.5-flash",
-        "gemini-1.5-flash"
+        "gemini-1.5-flash",
+        "gemini-1.5-pro"
       ];
       let responseText = "";
       let lastError = null;
