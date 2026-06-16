@@ -32,12 +32,11 @@ service cloud.firestore {
       return data.keys().hasOnly(['id', 'date', 'type', 'cards', 'question', 'interpretation', 'createdAt', 'chatHistory'])
         && (!isCreate || (data.keys().hasAll(['id', 'date', 'type', 'cards', 'createdAt'])))
         && data.id is string
-        && data.date is string && data.date.size() <= 50
-        && data.type is string && data.type.size() <= 50
-        && data.cards is list && data.cards.size() <= 15
-        && (data.cards.size() == 0 || data.cards[0] is map)
-        && (data.get('question', null) == null || (data.question is string && data.question.size() <= 1500))
-        && (data.get('interpretation', null) == null || (data.interpretation is string && data.interpretation.size() <= 65000))
+        && data.date is string
+        && data.type is string
+        && data.cards is list
+        && (data.get('question', null) == null || data.question is string)
+        && (data.get('interpretation', null) == null || data.interpretation is string)
         && (data.get('chatHistory', null) == null || data.chatHistory is list)
         && (isCreate ? data.createdAt == request.time : true);
     }
