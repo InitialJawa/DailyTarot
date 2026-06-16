@@ -144,14 +144,22 @@ export default function App() {
   const handleReadingComplete = async (cards: TarotCard[]) => {
     setIsInterpreting(true);
     try {
-      const response = await fetch('/api/interpret-tarot', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: spreadType, cards, question })
-      });
-      const data = await response.json();
-      
-      if (data.error) throw new Error(data.error);
+      let interpretationText = "";
+      try {
+        const response = await fetch('/api/interpret-tarot', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ type: spreadType, cards, question })
+        });
+        const data = await response.json();
+        
+        if (data.error) throw new Error(data.error);
+        interpretationText = data.text;
+      } catch (apiErr) {
+        console.warn("Using offline interpretation", apiErr);
+        const { generateOfflineInterpretation } = await import('./lib/offline-interpret');
+        interpretationText = await generateOfflineInterpretation(cards, spreadType, question);
+      }
 
       const newReading: Reading = {
         id: generateId(),
@@ -159,7 +167,7 @@ export default function App() {
         type: spreadType,
         cards,
         question,
-        interpretation: data.text
+        interpretation: interpretationText
       };
 
       setCurrentReading(newReading);
@@ -183,7 +191,7 @@ export default function App() {
 
     } catch (err) {
       console.error(err);
-      alert("Gagal mendapatkan interpretasi. Pastikan koneksi dan Gemini API Key Anda valid.");
+      alert("Terjadi kesalahan saat memproses kesimpulan.");
     } finally {
       setIsInterpreting(false);
     }

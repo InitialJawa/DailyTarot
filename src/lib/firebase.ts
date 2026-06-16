@@ -13,8 +13,9 @@ export const authProvider = new GoogleAuthProvider();
 export const loginWithGoogle = async () => {
   try {
     await signInWithPopup(auth, authProvider);
-  } catch (error) {
+  } catch (error: any) {
     console.error("Login failed", error);
+    alert(`Login gagal: ${error.message}\n\nTips: Jika Anda berada di dalam preview AI Studio, pop-up login mungkin diblokir oleh browser. Silakan klik tombol "Open in new tab" di pojok kanan atas layar Anda untuk login.`);
   }
 };
 
