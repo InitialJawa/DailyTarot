@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { UserProfile, SpreadType, ThemeOption } from '../types';
+import { UserProfile, SpreadType, ThemeOption, Reading } from '../types';
 import { X, Moon, Sun, History, Leaf, Square, LogIn, LogOut } from 'lucide-react';
 import { format } from 'date-fns';
 import { id } from 'date-fns/locale';

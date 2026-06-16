@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { majorArcana, TarotCard } from '../data/tarot';
+import { TAROT_DECK, TarotCard } from '../data/tarot';
 import { motion } from 'motion/react';
 import { SpreadType } from '../types';
 import { RefreshCw } from 'lucide-react';
@@ -16,13 +16,33 @@ const FAN_DEGREES = 80;
 export function Spread({ type, onReadingComplete, isInterpreting }: SpreadProps) {
   const numCards = type === 'Kartu Harian' ? 1 : 3;
   const [deck, setDeck] = useState<TarotCard[]>(() => {
-    return [...majorArcana].sort(() => Math.random() - 0.5);
+    return [...TAROT_DECK].sort(() => Math.random() - 0.5);
   });
   
   // Array of indices from deck that have been drawn
   const [drawnIndices, setDrawnIndices] = useState<number[]>([]);
   // Indices that have been fully flipped
   const [flippedIndices, setFlippedIndices] = useState<number[]>([]);
+  // Shuffling animation state
+  const [isShuffling, setIsShuffling] = useState(true);
+  
+  // Track window width locally for responsive updates
+  const [screenWidth, setScreenWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 400);
+
+  useEffect(() => {
+    if (isShuffling) {
+      const timer = setTimeout(() => setIsShuffling(false), 2200);
+      return () => clearTimeout(timer);
+    }
+  }, [isShuffling]);
+
+  useEffect(() => {
+    const handleResize = () => setScreenWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    // Init on mount just in case
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Calculate remaining indices
   const fanIndices = deck.map((_, i) => i).filter(i => !drawnIndices.includes(i));
@@ -52,9 +72,10 @@ export function Spread({ type, onReadingComplete, isInterpreting }: SpreadProps)
   };
 
   const resetSpread = () => {
-    setDeck([...majorArcana].sort(() => Math.random() - 0.5));
+    setDeck([...TAROT_DECK].sort(() => Math.random() - 0.5));
     setDrawnIndices([]);
     setFlippedIndices([]);
+    setIsShuffling(true);
   };
 
   const labelMap = ['Masa Lalu', 'Masa Kini', 'Masa Depan'];
@@ -69,8 +90,9 @@ export function Spread({ type, onReadingComplete, isInterpreting }: SpreadProps)
     const fanIdx = fanIndices.indexOf(i);
     const totalFan = fanIndices.length;
     const mid = (totalFan - 1) / 2;
-    const offset = fanIdx - mid;
-    const rotation = totalFan > 1 ? offset * (FAN_DEGREES / totalFan) : 0;
+    const offset = totalFan > 1 ? fanIdx - mid : 0;
+    // normalized is -1 (left) to 1 (right)
+    const normalizedOffset = mid > 0 ? offset / mid : 0;
     
     // Animated styles
     let x = 0;
@@ -79,19 +101,21 @@ export function Spread({ type, onReadingComplete, isInterpreting }: SpreadProps)
     let scale = 1;
     let zIndex = i;
 
+    let angle = 0; // hoisted
+
     if (isDrawn) {
       // Calculate position in the drawn slots.
       // We'll roughly center them.
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+      const isMobile = screenWidth < 768;
       const slotWidth = isMobile ? 80 : 120; // Desktop vs Mobile slot allocation width
-      const gap = isMobile ? 20 : 40;
+      const gap = isMobile ? 16 : 40;
       const totalWidth = (slotWidth * numCards) + (gap * (numCards - 1));
       const startX = -(totalWidth / 2) + (slotWidth / 2);
       
       x = startX + (drawSlot * (slotWidth + gap));
       y = isMobile ? -230 : -220; // Move up to reading area
       rotate = 0; // Straigthen
-      scale = isMobile ? 1.4 : 1.2; // Make bigger (since actual w is 80 or 110)
+      scale = isMobile ? 1.3 : 1.2; // Make bigger (since actual w is 80 or 110)
       zIndex = 100 + drawSlot; // Bring above fan
       
       // A slight varied rotation for dramatic flair like the reference image
@@ -100,29 +124,79 @@ export function Spread({ type, onReadingComplete, isInterpreting }: SpreadProps)
       
     } else {
       // Fan position
-      const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-      const xFactor = isMobile ? 11 : 16;
-      x = offset * xFactor; 
-      y = Math.abs(offset) * 2; 
-      rotate = rotation;
+      const isMobile = screenWidth < 768;
+      
+      // Calculate max width dynamically so it never overflows the screen horizontally
+      // Mobile card is 80px, Desktop is 110px. Give extra padding so it doesn't touch the edge.
+      const cardWidth = isMobile ? 80 : 110;
+      const padding = 40;
+      let maxSpreadWidth = screenWidth - cardWidth - padding;
+      
+      if (isMobile) {
+        // Tighter neat arc row for mobile
+        maxSpreadWidth = 140; // Cap the width very strongly so it's not "terlalu lebar"
+        x = normalizedOffset * (maxSpreadWidth / 2);
+        
+        const maxArcDip = 40; // gentler curve
+        y = Math.pow(normalizedOffset, 2) * maxArcDip - 40; // offset Y to compensate
+        
+        rotate = normalizedOffset * 30; // moderate fan rotation
+        
+      } else {
+        // Single wide arc for desktop
+        maxSpreadWidth = Math.min(maxSpreadWidth, 600);
+        x = normalizedOffset * (maxSpreadWidth / 2);
+        
+        const maxArcDip = 80;
+        y = Math.pow(normalizedOffset, 2) * maxArcDip;
+        
+        const maxRotation = 45;
+        rotate = normalizedOffset * maxRotation;
+      }
+    }
+
+    const isMobile = screenWidth < 768;
+    const hoverX = !isDrawn && isMobile ? x : x;
+    const hoverY = !isDrawn && isMobile ? (y - 30) : (y - 20);
+
+    let animateProps: any = { opacity: 1, x, y, rotate, scale };
+    let transitionProps: any = { type: "spring", stiffness: 260, damping: 20 };
+
+    if (isShuffling && !isDrawn) {
+      // Shuffling animation: split deck, shuffle, and reform
+      const isLeftStack = fanIdx % 2 === 0;
+      animateProps = {
+        opacity: [0, 1, 1, 1],
+        x: [0, isLeftStack ? -80 : 80, 0, x],
+        y: [-100, -180 + (Math.random() * 20), -120, y],
+        rotate: [0, isLeftStack ? -15 : 15, 0, rotate],
+        scale: [1, 1.1, 1.1, scale]
+      };
+      transitionProps = {
+        duration: 2.0,
+        times: [0, 0.3, 0.6, 1],
+        ease: "easeInOut"
+      };
+    } else {
+       transitionProps = { 
+         type: "spring", 
+         stiffness: 260, 
+         damping: 20, 
+         delay: (!isDrawn ? fanIdx * 0.005 : 0) // cascaded fan spread 
+       };
     }
 
     return (
       <motion.div
         key={card.id + i}
         initial={{ opacity: 0, y: 100 }}
-        animate={{ 
-           opacity: 1, 
-           x, 
-           y, 
-           rotate,
-           scale
-        }}
-        transition={{ type: "spring", stiffness: 260, damping: 20 }}
+        animate={animateProps}
+        transition={transitionProps}
         style={{ zIndex }}
         className="absolute bottom-0 w-[80px] md:w-[110px] aspect-[2/3] cursor-pointer origin-bottom drop-shadow-xl hover:z-50"
         onClick={() => handleCardClick(i)}
-        whileHover={!isDrawn ? { y: y - 20, scale: 1.1, zIndex: 90 } : {}}
+        whileHover={!isDrawn && !isShuffling ? { x: hoverX, y: hoverY, scale: 1.1, zIndex: 100 } : {}}
+        whileTap={!isDrawn && !isShuffling ? { x: hoverX, y: hoverY, scale: 1.1, zIndex: 100 } : {}}
       >
         <motion.div
           className="w-full h-full relative transform-style-3d rounded-lg shadow-2xl transition-all duration-300"

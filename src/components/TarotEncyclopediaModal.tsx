@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { majorArcana, TarotCard } from '../data/tarot';
+import { TAROT_DECK, TarotCard, majorArcana, minorArcana } from '../data/tarot';
 import { Book, X, ChevronRight, ChevronLeft, Sparkles, RefreshCw, Bird } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -154,6 +154,27 @@ export function TarotEncyclopediaModal({ isOpen, onClose }: TarotEncyclopediaMod
                              </div>
                              <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-text-secondary group-hover:text-accent text-center mt-1">
                                {card.number}. {card.name}
+                             </span>
+                           </button>
+                        ))}
+                     </div>
+                  </div>
+
+                  <div className="mb-8">
+                     <h3 className="text-sm font-sans font-bold uppercase tracking-[0.2em] mb-4 text-text-secondary mt-8">Minor Arcana</h3>
+                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-4">
+                        {minorArcana.map((card) => (
+                           <button 
+                             key={card.id}
+                             onClick={() => handleCardClick(card)}
+                             className="group flex flex-col items-center gap-2"
+                           >
+                             <div className="relative w-full aspect-[2/3] rounded-lg overflow-hidden border border-text-secondary/20 group-hover:border-accent transition-colors shadow-sm group-hover:shadow-md">
+                               <img src={card.image} alt={card.name} className="w-full h-full object-cover" />
+                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors"></div>
+                             </div>
+                             <span className="text-[10px] font-sans font-bold uppercase tracking-widest text-text-secondary group-hover:text-accent text-center mt-1">
+                               {card.name}
                              </span>
                            </button>
                         ))}

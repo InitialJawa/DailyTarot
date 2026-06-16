@@ -53,15 +53,31 @@ Tulis dalam format Markdown. Struktur:
 - Makna masing-masing kartu (dan posisinya jika relevan)
 - Kesimpulan dan pesan inspiratif.`;
 
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash", "gemini-1.5-pro"];
       let responseText = "";
-      try {
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: prompt,
-        });
-        responseText = response.text || "";
-      } catch (err: any) {
-        throw new Error(err.message || "Failed to generate reading.");
+      let lastError;
+
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`[interpret-tarot] Trying model: ${modelName}...`);
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: prompt,
+          });
+          responseText = response.text || "";
+          break;
+        } catch (err: any) {
+          lastError = err;
+          if (err.message && (err.message.includes("429") || err.message.includes("quota"))) {
+            console.warn(`Model ${modelName} hit quota limits, trying next...`);
+            continue;
+          }
+          throw new Error(err.message || "Gagal membuat bacaan tarot.");
+        }
+      }
+
+      if (!responseText) {
+        throw new Error("Batas harian penggunaan layanan AI telah habis. Kami mengandalkan versi gratis yang memiliki keterbatasan. Silakan coba lagi nanti.");
       }
 
       res.json({ text: responseText });
@@ -89,12 +105,28 @@ Berikan penjelasan mendalam mengenai kartu: ${cardName} (${arcana} Arcana) dalam
 Jelaskan makna intinya, pengaruhnya dalam cinta, karir, spiritualitas, serta pesan kuncinya.
 Tuliskan jawabannya dalam format Markdown yang rapi dan mudah dibaca (gunakan judul, bullet points).`;
 
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       let responseText = "";
-      try {
-        const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
-        responseText = response.text || "";
-      } catch (err: any) {
-        throw new Error(err.message || "Failed to generate interpretation.");
+      let lastError;
+
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`[interpret-card] Trying model: ${modelName}...`);
+          const response = await ai.models.generateContent({ model: modelName, contents: prompt });
+          responseText = response.text || "";
+          break;
+        } catch (err: any) {
+          lastError = err;
+          if (err.message && (err.message.includes("429") || err.message.includes("quota"))) {
+            console.warn(`Model ${modelName} hit quota limits, trying next...`);
+            continue;
+          }
+          throw new Error(err.message || "Failed to generate interpretation.");
+        }
+      }
+
+      if (!responseText) {
+        throw new Error("Batas kuota harian layanan AI telah habis. Silakan coba lagi nanti.");
       }
 
       res.json({ text: responseText });
@@ -170,19 +202,35 @@ Tuliskan balasan dalam format Markdown.`;
         contents.unshift({ role: 'user', parts: [{ text: 'Halo' }] });
       }
 
+      const modelsToTry = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
       let responseText = "";
-      try {
-        const response = await ai.models.generateContent({
-          model: "gemini-2.5-flash",
-          contents: contents,
-          config: {
-            systemInstruction: systemInstruction,
+      let lastError;
+      
+      for (const modelName of modelsToTry) {
+        try {
+          console.log(`[chat-master] Trying model: ${modelName}...`);
+          const response = await ai.models.generateContent({
+            model: modelName,
+            contents: contents,
+            config: {
+              systemInstruction: systemInstruction,
+            }
+          });
+          responseText = response.text || "";
+          break;
+        } catch (err: any) {
+          lastError = err;
+          if (err.message && (err.message.includes("429") || err.message.includes("quota"))) {
+            console.warn(`Model ${modelName} hit quota limits, trying next...`);
+            continue;
           }
-        });
-        responseText = response.text || "";
-      } catch (err: any) {
-        console.warn(`Model gemini-2.5-flash failed for chat:`, err.message);
-        throw err;
+          console.warn(`Model failed for chat:`, err.message);
+          throw err;
+        }
+      }
+
+      if (!responseText) {
+        throw new Error("Batas kuota harian Master Tarot telah habis. Silakan sapa kembali nanti ya.");
       }
 
       res.json({ text: responseText });

@@ -41,6 +41,7 @@ export default function App() {
   const [question, setQuestion] = useState('');
   const [currentReading, setCurrentReading] = useState<Reading | null>(null);
   const [isInterpreting, setIsInterpreting] = useState(false);
+  const [readingError, setReadingError] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
@@ -160,6 +161,7 @@ export default function App() {
 
   const handleReadingComplete = async (cards: TarotCard[]) => {
     setIsInterpreting(true);
+    setReadingError(null);
     try {
       let interpretationText = "";
       try {
@@ -235,7 +237,7 @@ export default function App() {
 
     } catch (err: any) {
       console.error(err);
-      alert(err.message || "Terjadi kesalahan saat memproses kesimpulan.");
+      setReadingError(err.message || "Terjadi kesalahan saat memproses kesimpulan.");
     } finally {
       setIsInterpreting(false);
     }
@@ -386,6 +388,21 @@ export default function App() {
                     <Bird size={36} className="opacity-80" strokeWidth={1.5} />
                   </motion.div>
                    <p className="font-serif italic text-lg text-text-secondary">Menyusun benang-benang takdir...</p>
+                 </motion.div>
+               )}
+               
+               {readingError && (
+                 <motion.div 
+                   initial={{ opacity: 0 }} animate={{ opacity: 1 }}
+                   className="mt-12 bg-red-500/10 border border-red-500/50 p-6 rounded-2xl max-w-lg mx-auto text-center"
+                 >
+                    <p className="text-red-400 font-sans text-sm mb-4">{readingError}</p>
+                    <button 
+                      onClick={() => setReadingError(null)}
+                      className="px-4 py-2 bg-bg-secondary border border-text-secondary/20 rounded-lg text-xs font-bold uppercase"
+                    >
+                      Tutup
+                    </button>
                  </motion.div>
                )}
             </motion.div>
