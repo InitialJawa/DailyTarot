@@ -67,10 +67,16 @@ export function ChatMasterModal({ reading, isOpen, onClose, onSaveHistory }: Cha
         })
       });
 
-      const data = await response.json();
+      const textResponse = await response.text();
+      let data;
+      try {
+        data = JSON.parse(textResponse);
+      } catch (e) {
+        throw new Error(response.ok ? "Invalid JSON dari API" : `Vercel Error ${response.status}: ${textResponse.substring(0, 50)}`);
+      }
       
-      if (data.error) {
-        throw new Error(data.error);
+      if (!response.ok || data.error) {
+        throw new Error(data.error || `HTTP Error ${response.status}`);
       }
 
       const aiMsg: ChatMessage = {
@@ -84,12 +90,13 @@ export function ChatMasterModal({ reading, isOpen, onClose, onSaveHistory }: Cha
       setMessages(finalMessages);
       onSaveHistory(reading.id, finalMessages);
       
-    } catch (error) {
+    } catch (error: any) {
       console.error("Chat error:", error);
+      const errText = error?.message || String(error);
       const errorMsg: ChatMessage = {
         id: generateId(),
         role: 'assistant',
-        content: "Maaf, energi saat ini sedang tidak stabil. Saya tidak dapat merespons. Silakan coba lagi.",
+        content: `Maaf, energi saat ini sedang tidak stabil. Error: ${errText}`,
         timestamp: new Date().toISOString()
       };
       setMessages([...updatedMessages, errorMsg]);

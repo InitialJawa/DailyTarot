@@ -180,9 +180,17 @@ export default function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await response.json();
+        const textResponse = await response.text();
+        let data;
+        try {
+          data = JSON.parse(textResponse);
+        } catch (e) {
+          throw new Error(response.ok ? "Invalid JSON dari API" : `Vercel Error ${response.status}: ${textResponse.substring(0, 50)}`);
+        }
         
-        if (data.error) throw new Error(data.error);
+        if (!response.ok || data.error) {
+           throw new Error(data.error || `HTTP Error ${response.status}`);
+        }
         interpretationText = data.text;
       } catch (apiErr: any) {
         console.warn("API Error:", apiErr);
