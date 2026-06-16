@@ -16,24 +16,29 @@ service cloud.firestore {
     // --- Validation Helpers ---
 
     function isValidUserConfig(data, isCreate) {
-      return data.keys().hasOnly(['name', 'theme', 'soundEnabled', 'createdAt', 'updatedAt'])
-        && (!isCreate || (data.keys().hasAll(['name', 'theme', 'soundEnabled', 'createdAt']) && data.keys().size() >= 4))
+      return data.keys().hasOnly(['name', 'theme', 'soundEnabled', 'createdAt', 'updatedAt', 'birthDate', 'currentActivity', 'relationshipStatus'])
+        && (!isCreate || (data.keys().hasAll(['name', 'theme', 'soundEnabled', 'createdAt'])))
         && data.name is string && data.name.size() <= 50
         && data.theme is string && data.theme.size() <= 20
         && data.soundEnabled is bool
+        && (data.get('birthDate', null) == null || (data.birthDate is string && data.birthDate.size() <= 50))
+        && (data.get('currentActivity', null) == null || (data.currentActivity is string && data.currentActivity.size() <= 100))
+        && (data.get('relationshipStatus', null) == null || (data.relationshipStatus is string && data.relationshipStatus.size() <= 50))
         && (isCreate ? data.createdAt == request.time : true)
         && (data.get('updatedAt', null) == null || data.updatedAt == request.time);
     }
 
     function isValidReading(data, isCreate) {
-      return data.keys().hasOnly(['date', 'type', 'cards', 'question', 'interpretation', 'createdAt'])
-        && (!isCreate || (data.keys().hasAll(['date', 'type', 'cards', 'createdAt']) && data.keys().size() >= 4))
+      return data.keys().hasOnly(['id', 'date', 'type', 'cards', 'question', 'interpretation', 'createdAt', 'chatHistory'])
+        && (!isCreate || (data.keys().hasAll(['id', 'date', 'type', 'cards', 'createdAt'])))
+        && data.id is string
         && data.date is string && data.date.size() <= 50
         && data.type is string && data.type.size() <= 50
         && data.cards is list && data.cards.size() <= 15
         && (data.cards.size() == 0 || data.cards[0] is map)
-        && (data.get('question', null) == null || (data.question is string && data.question.size() <= 500))
-        && (data.get('interpretation', null) == null || (data.interpretation is string && data.interpretation.size() <= 5000))
+        && (data.get('question', null) == null || (data.question is string && data.question.size() <= 1500))
+        && (data.get('interpretation', null) == null || (data.interpretation is string && data.interpretation.size() <= 65000))
+        && (data.get('chatHistory', null) == null || data.chatHistory is list)
         && (isCreate ? data.createdAt == request.time : true);
     }
 
@@ -53,7 +58,7 @@ service cloud.firestore {
       allow update: if isOwner(userId)
                     && isValidId(userId)
                     && isValidUserConfig(incoming(), false)
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'theme', 'soundEnabled', 'updatedAt'])
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'theme', 'soundEnabled', 'updatedAt', 'birthDate', 'currentActivity', 'relationshipStatus'])
                     && incoming().get('createdAt', existing().get('createdAt', '')) == existing().get('createdAt', '');
       allow delete: if false; 
       
@@ -65,7 +70,10 @@ service cloud.firestore {
                       && isValidId(userId)
                       && isValidId(readingId)
                       && isValidReading(incoming(), true);
-        allow update: if false; // Readings are immutable
+        allow update: if isOwner(userId)
+                      && isValidId(userId)
+                      && isValidId(readingId)
+                      && incoming().diff(existing()).affectedKeys().hasOnly(['chatHistory']);
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(readingId);
       }
     }
