@@ -12,7 +12,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: "Invalid cards data" });
     }
 
-    const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ error: "Gemini API key is not configured on Vercel. Please add it to Environment Variables and Redeploy." });
+    }
+
+    const ai = new GoogleGenAI({ apiKey });
     
     let prompt = `Anda adalah seorang pembaca Tarot profesional yang empatik dan berwawasan luas. Berikan interpretasi mendalam untuk bacaan berikut:\n\n`;
     prompt += `Jenis Tebaran: ${type}\n`;

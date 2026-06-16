@@ -155,10 +155,17 @@ export default function App() {
         
         if (data.error) throw new Error(data.error);
         interpretationText = data.text;
-      } catch (apiErr) {
-        console.warn("Using offline interpretation", apiErr);
-        const { generateOfflineInterpretation } = await import('./lib/offline-interpret');
-        interpretationText = await generateOfflineInterpretation(cards, spreadType, question);
+      } catch (apiErr: any) {
+        console.warn("API Error:", apiErr);
+        // Tampilkan error aslinya agar pengguna tahu kendalanya di Vercel
+        const errMessage = apiErr?.message || String(apiErr);
+        if (errMessage.includes("API key") || errMessage.includes("fetch")) {
+            throw new Error("Gagal menghubungi API: " + errMessage);
+        }
+        
+        // Hanya mode offline jika itu benar-benar error yang diabaikan. Atau kita sementara paksa tidak offline
+        // untuk mendebug error pada production
+        throw new Error("Error dari API Vercel: " + errMessage);
       }
 
       const newReading: Reading = {
@@ -189,9 +196,9 @@ export default function App() {
         }
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      alert("Terjadi kesalahan saat memproses kesimpulan.");
+      alert(err.message || "Terjadi kesalahan saat memproses kesimpulan.");
     } finally {
       setIsInterpreting(false);
     }
