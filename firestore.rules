@@ -37,6 +37,12 @@ service cloud.firestore {
         && (isCreate ? data.createdAt == request.time : true);
     }
 
+    function isValidEncyclopediaEntry(data, isCreate) {
+      return data.keys().hasOnly(['interpretation', 'createdAt'])
+        && data.interpretation is string && data.interpretation.size() <= 15000
+        && (isCreate ? data.createdAt == request.time : true);
+    }
+
     // --- Match Rules ---
 
     match /users/{userId} {
@@ -62,6 +68,15 @@ service cloud.firestore {
         allow update: if false; // Readings are immutable
         allow delete: if isOwner(userId) && isValidId(userId) && isValidId(readingId);
       }
+    }
+
+    match /encyclopedia_cache/{cardId} {
+      allow read: if true;
+      allow create: if isSignedIn()
+                    && isValidId(cardId)
+                    && isValidEncyclopediaEntry(incoming(), true);
+      allow update: if false;
+      allow delete: if false;
     }
   }
 }

@@ -1,5 +1,12 @@
 import { TarotCard } from './data/tarot';
 
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+}
+
 export interface Reading {
   id: string;
   date: string;
@@ -7,6 +14,7 @@ export interface Reading {
   cards: TarotCard[];
   question?: string;
   interpretation?: string;
+  chatHistory?: ChatMessage[];
 }
 
 export type ThemeOption = 'light' | 'dark-mystic' | 'minimalis' | 'alam';
@@ -16,6 +24,9 @@ export interface UserProfile {
   theme: ThemeOption;
   soundEnabled: boolean;
   history: Reading[];
+  birthDate?: string;
+  currentActivity?: string;
+  relationshipStatus?: string;
 }
 
 export type SpreadType = 'Kartu Harian' | 'Tiga Kartu (Lalu, Kini, Nanti)';

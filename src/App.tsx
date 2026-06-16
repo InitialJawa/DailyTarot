@@ -7,11 +7,13 @@ import React, { useState, useEffect } from 'react';
 import { Spread } from './components/Spread';
 import { AudioPlayer } from './components/AudioPlayer';
 import { ProfileModal } from './components/ProfileModal';
-import { SpreadType, UserProfile, Reading } from './types';
+import { TarotEncyclopediaModal } from './components/TarotEncyclopediaModal';
+import { ChatMasterModal } from './components/ChatMasterModal';
+import { SpreadType, UserProfile, Reading, ChatMessage } from './types';
 import { generateId } from './utils';
 import Markdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
-import { Share2, Settings, Sparkles, UserCircle } from 'lucide-react';
+import { Share2, Settings, Sparkles, UserCircle, Book, MessageSquare } from 'lucide-react';
 import { TarotCard } from './data/tarot';
 
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -33,6 +35,8 @@ export default function App() {
   });
 
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isEncyclopediaOpen, setIsEncyclopediaOpen] = useState(false);
+  const [isChatMasterOpen, setIsChatMasterOpen] = useState(false);
   const [spreadType, setSpreadType] = useState<SpreadType>('Kartu Harian');
   const [question, setQuestion] = useState('');
   const [currentReading, setCurrentReading] = useState<Reading | null>(null);
@@ -56,6 +60,9 @@ export default function App() {
               name: data.name || prev.name,
               theme: data.theme || prev.theme,
               soundEnabled: data.soundEnabled !== undefined ? data.soundEnabled : prev.soundEnabled,
+              birthDate: data.birthDate || prev.birthDate,
+              currentActivity: data.currentActivity || prev.currentActivity,
+              relationshipStatus: data.relationshipStatus || prev.relationshipStatus,
               history: historyData.sort((a,b) => new Date(a.date).getTime() - new Date(b.date).getTime())
             }));
             
@@ -127,12 +134,22 @@ export default function App() {
     setProfile(prev => ({ ...prev, ...updates }));
     
     // Sync config to Firestore
-    if (user && (updates.theme || updates.soundEnabled !== undefined || updates.name)) {
+    if (user && (
+      updates.theme || 
+      updates.soundEnabled !== undefined || 
+      updates.name ||
+      updates.birthDate !== undefined ||
+      updates.currentActivity !== undefined ||
+      updates.relationshipStatus !== undefined
+    )) {
       try {
         const toSave: any = { updatedAt: serverTimestamp() };
         if (updates.theme) toSave.theme = updates.theme;
         if (updates.soundEnabled !== undefined) toSave.soundEnabled = updates.soundEnabled;
         if (updates.name) toSave.name = updates.name;
+        if (updates.birthDate !== undefined) toSave.birthDate = updates.birthDate;
+        if (updates.currentActivity !== undefined) toSave.currentActivity = updates.currentActivity;
+        if (updates.relationshipStatus !== undefined) toSave.relationshipStatus = updates.relationshipStatus;
         
         await setDoc(doc(db, 'users', user.uid), toSave, { merge: true });
       } catch (error) {
@@ -146,10 +163,22 @@ export default function App() {
     try {
       let interpretationText = "";
       try {
+        const payload = {
+          type: spreadType,
+          cards,
+          question,
+          profile: {
+            name: profile.name,
+            birthDate: profile.birthDate,
+            currentActivity: profile.currentActivity,
+            relationshipStatus: profile.relationshipStatus
+          }
+        };
+
         const response = await fetch('/api/interpret-tarot', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ type: spreadType, cards, question })
+          body: JSON.stringify(payload)
         });
         const data = await response.json();
         
@@ -210,6 +239,27 @@ export default function App() {
   const shareUrl = encodeURIComponent(window.location.href);
   const encodedShareText = encodeURIComponent(shareText);
 
+  const handleSaveChatHistory = async (readingId: string, updatedHistory: ChatMessage[]) => {
+    if (currentReading && currentReading.id === readingId) {
+       setCurrentReading(prev => prev ? { ...prev, chatHistory: updatedHistory } : null);
+    }
+    
+    setProfile(prev => ({
+       ...prev,
+       history: prev.history.map(r => r.id === readingId ? { ...r, chatHistory: updatedHistory } : r)
+    }));
+
+    if (user) {
+      try {
+        await setDoc(doc(db, 'users', user.uid, 'readings', readingId), {
+          chatHistory: updatedHistory
+        }, { merge: true });
+      } catch (error) {
+        console.warn("Failed saving chat history to Firestore", error);
+      }
+    }
+  };
+
   const handleShare = async () => {
     if (!currentReading) return;
     if (navigator.share) {
@@ -246,6 +296,19 @@ export default function App() {
              className="text-[10px] font-sans font-bold uppercase tracking-widest px-4 py-2 rounded-lg border border-text-secondary/20 text-text-secondary hover:text-accent transition-colors hidden md:block"
           >
             Aktifkan Pengingat
+          </button>
+          <button 
+             onClick={() => setIsEncyclopediaOpen(true)}
+             className="flex items-center gap-2 text-[10px] font-sans font-bold uppercase tracking-widest px-4 py-2 rounded-lg border border-text-secondary/20 text-text-secondary hover:text-accent transition-colors hidden md:block"
+          >
+             <Book size={14} /> Ensiklopedia
+          </button>
+          <button 
+             onClick={() => setIsEncyclopediaOpen(true)}
+             className="w-10 h-10 rounded-full bg-text-secondary/10 border border-text-secondary/20 flex items-center justify-center text-accent hover:bg-text-secondary/20 transition-colors md:hidden"
+             title="Ensiklopedia"
+          >
+             <Book size={18} />
           </button>
           <button 
              onClick={() => setIsProfileOpen(true)}
@@ -346,6 +409,14 @@ export default function App() {
 
                <div className="flex flex-col items-center border-t border-text-secondary/10 pt-8 gap-4 mt-8">
                  <button 
+                   onClick={() => setIsChatMasterOpen(true)}
+                   className="flex items-center gap-2 px-6 py-3 bg-text-secondary/10 border border-text-secondary/30 text-text-primary font-sans font-bold text-xs uppercase tracking-widest rounded-full hover:bg-text-secondary/20 transition-colors w-[220px] justify-center shadow-lg"
+                 >
+                   Tanya Master Tarot
+                   <MessageSquare size={14} />
+                 </button>
+
+                 <button 
                    onClick={handleShare}
                    className="flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground font-sans font-bold text-xs uppercase tracking-widest rounded-full shadow-lg hover:scale-105 transition-transform w-[220px] justify-center"
                  >
@@ -393,6 +464,20 @@ export default function App() {
         profile={profile}
         updateProfile={handleUpdateProfile}
       />
+
+      <TarotEncyclopediaModal 
+        isOpen={isEncyclopediaOpen}
+        onClose={() => setIsEncyclopediaOpen(false)}
+      />
+
+      {currentReading && (
+        <ChatMasterModal 
+          isOpen={isChatMasterOpen}
+          onClose={() => setIsChatMasterOpen(false)}
+          reading={currentReading}
+          onSaveHistory={handleSaveChatHistory}
+        />
+      )}
     </div>
   );
 }

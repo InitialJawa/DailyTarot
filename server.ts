@@ -15,7 +15,7 @@ async function startServer() {
   // AI Interpretation Route
   app.post("/api/interpret-tarot", async (req, res) => {
     try {
-      const { cards, type, question } = req.body;
+      const { cards, type, question, profile } = req.body;
       
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
@@ -31,18 +31,37 @@ async function startServer() {
         }
       });
 
+      let profileContext = "";
+      if (profile) {
+        profileContext = `\nInformasi Klien:
+- Nama: ${profile.name || 'Tidak disebutkan'}
+- Tanggal Lahir: ${profile.birthDate ? profile.birthDate : 'Tidak disebutkan'} ${profile.birthDate ? '(Tolong sertakan wawasan astrologi/zodiak klien berdasarkan tanggal lahir ini dalam bacaan)' : ''}
+- Kesibukan Saat Ini: ${profile.currentActivity ? profile.currentActivity : 'Tidak disebutkan'}
+- Status Hubungan: ${profile.relationshipStatus ? profile.relationshipStatus : 'Tidak disebutkan'}\n`;
+      }
+
       const prompt = `Anda adalah seorang ahli pembaca Tarot yang bijaksana, empatik, dan inspiratif.
 Pengguna telah memilih bacaan tipe: ${type}.
 Kartu yang ditarik: ${cards.map((c: any) => c.name).join(", ")}.
-Pertanyaan pengguna (opsional): ${question || "Tidak ada, hanya pembacaan umum harian."}
+Pertanyaan pengguna (opsional): ${question || "Tidak ada, hanya pembacaan umum harian."}${profileContext}
 
-Berikan interpretasi yang mendalam, bermakna, dan menenangkan dalam bahasa Indonesia.
+Berikan interpretasi yang mendalam, bermakna, personal, dan menenangkan dalam bahasa Indonesia dengan mengaitkannya ke informasi klien jika ada. Jika tanggal lahir klien tersedia, identifikasi zodiaknya dan sertakan paragraf khusus mengenai wawasan astrologi yang berhubungan dengan bacaan ini.
+
 Tulis dalam format Markdown. Struktur:
 - Pendahuluan singkat
+- Wawasan Astrologi (jika tanggal lahir diketahui)
 - Makna masing-masing kartu (dan posisinya jika relevan)
 - Kesimpulan dan pesan inspiratif.`;
 
-      const modelsToTry = ["gemini-1.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+      const modelsToTry = [
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-3.0-flash",
+        "gemini-1.5-flash",
+        "gemini-1.5-pro",
+        "gemini-2.0-flash",
+        "gemini-2.5-pro"
+      ];
       let responseText = "";
       let lastError = null;
 
@@ -68,6 +87,133 @@ Tulis dalam format Markdown. Struktur:
     } catch (error: any) {
       console.error("Error generating tarot reading:", error);
       res.status(500).json({ error: error.message || "Failed to generate reading." });
+    }
+  });
+
+  // AI Interpretation for specific card in Encyclopedia
+  app.post("/api/interpret-card", async (req, res) => {
+    try {
+      const { cardName, arcana, isReversed } = req.body;
+      
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Gemini API key is missing. Please configure it in the Settings." });
+      }
+
+      const ai = new GoogleGenAI({ apiKey, httpOptions: { headers: { 'User-Agent': 'aistudio-build' } }});
+
+      const positionText = isReversed ? "terbalik (reversed)" : "tegak (upright)";
+      const prompt = `Anda adalah seorang ahli Tarot Ensiklopedia.
+Berikan penjelasan mendalam mengenai kartu: ${cardName} (${arcana} Arcana) dalam posisi ${positionText}.
+Jelaskan makna intinya, pengaruhnya dalam cinta, karir, spiritualitas, serta pesan kuncinya.
+Tuliskan jawabannya dalam format Markdown yang rapi dan mudah dibaca (gunakan judul, bullet points).`;
+
+      const modelsToTry = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"];
+      let responseText = "";
+      let lastError = null;
+
+      for (const model of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({ model: model, contents: prompt });
+          responseText = response.text || "";
+          break;
+        } catch (err: any) {
+          lastError = err;
+        }
+      }
+
+      if (!responseText) {
+        throw new Error(lastError?.message || "Semua model Gemini gagal merespons.");
+      }
+
+      res.json({ text: responseText });
+    } catch (error: any) {
+      console.error("Error generating card interpretation:", error);
+      res.status(500).json({ error: error.message || "Failed to generate interpretation." });
+    }
+  });
+
+  // AI Chat Master Route
+  app.post("/api/chat-master", async (req, res) => {
+    try {
+      const { readingContext, message, chatHistory } = req.body;
+      
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Gemini API key is missing. Please configure it in the Settings." });
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey,
+        httpOptions: {
+          headers: {
+            'User-Agent': 'aistudio-build',
+          }
+        }
+      });
+
+      const systemInstruction = `Anda adalah Tarot Master yang bijaksana, empatik, dan berpengalaman.
+Pengguna sedang berkonsultasi mengenai hasil bacaan tarot mereka.
+Konteks Bacaan:
+- Tipe Bacaan: ${readingContext.type}
+- Pertanyaan Pengguna: ${readingContext.question || 'Tidak ada'}
+- Kartu yang ditarik: ${readingContext.cards}
+- Interpretasi Dasar: ${readingContext.interpretation}
+
+Tugas Anda adalah menjawab pertanyaan atau keluh kesah pengguna terkait bacaan ini. 
+Berbicaralah selayaknya seorang Master Tarot yang sedang duduk bersama mereka. 
+Gunakan bahasa Indonesia yang empatik, sedikit puitis namun tetap membumi dan membantu.
+Tuliskan balasan dalam format Markdown.`;
+
+      const contents = [];
+      
+      if (chatHistory && chatHistory.length > 0) {
+        for (const msg of chatHistory) {
+          contents.push({
+            role: msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }]
+          });
+        }
+      }
+
+      contents.push({
+        role: "user",
+        parts: [{ text: message }]
+      });
+
+      const modelsToTry = [
+        "gemini-2.5-flash-lite",
+        "gemini-2.5-flash",
+        "gemini-1.5-flash"
+      ];
+      let responseText = "";
+      let lastError = null;
+
+      for (const model of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: model,
+            contents: contents,
+            config: {
+              systemInstruction: systemInstruction,
+            }
+          });
+          responseText = response.text || "";
+          break;
+        } catch (err: any) {
+          console.warn(`Model ${model} failed for chat:`, err.message);
+          lastError = err;
+        }
+      }
+
+      if (!responseText) {
+        throw new Error(lastError?.message || "Gagal menghubungi Tarot Master.");
+      }
+
+      res.json({ text: responseText });
+    } catch (error: any) {
+      console.error("Error generating chat response:", error);
+      res.status(500).json({ error: error.message || "Gagal menghubungi Tarot Master." });
     }
   });
 

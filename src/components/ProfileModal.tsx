@@ -71,6 +71,48 @@ export function ProfileModal({ isOpen, onClose, profile, updateProfile }: Profil
 
           <div className="p-6 overflow-y-auto flex-1 custom-scrollbar">
             <div className="space-y-8">
+              {/* Personal Info Section */}
+              <section>
+                <h3 className="text-xs font-sans font-bold uppercase tracking-[0.2em] mb-4 text-text-secondary">Informasi Pribadi</h3>
+                <p className="text-[10px] text-text-secondary mb-4 opacity-70">Informasi ini akan membantu AI memberikan bacaan tarot yang lebih relevan dan akurat untuk Anda.</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Tanggal Lahir</label>
+                    <input 
+                      type="date" 
+                      value={profile.birthDate || ''}
+                      onChange={(e) => updateProfile({ birthDate: e.target.value })}
+                      className="bg-bg-secondary border border-text-secondary/20 rounded-lg p-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Status Hubungan</label>
+                    <select
+                      value={profile.relationshipStatus || ''}
+                      onChange={(e) => updateProfile({ relationshipStatus: e.target.value })}
+                      className="bg-bg-secondary border border-text-secondary/20 rounded-lg p-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                    >
+                      <option value="">Pilih Status</option>
+                      <option value="Lajang">Lajang</option>
+                      <option value="Berpacaran">Berpacaran</option>
+                      <option value="Menikah">Menikah</option>
+                      <option value="Rumit">Rumit</option>
+                      <option value="Bercerai/Berpisah">Bercerai/Berpisah</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5 md:col-span-2">
+                    <label className="text-[10px] font-bold uppercase tracking-widest text-text-secondary">Kesibukan/Fokus Saat Ini</label>
+                    <input 
+                      type="text" 
+                      placeholder="Contoh: Sedang mencari kerja, fokus kuliah, membangun bisnis..."
+                      value={profile.currentActivity || ''}
+                      onChange={(e) => updateProfile({ currentActivity: e.target.value })}
+                      className="bg-bg-secondary border border-text-secondary/20 rounded-lg p-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+                    />
+                  </div>
+                </div>
+              </section>
+
               {/* Settings Section */}
               <section>
                 <h3 className="text-xs font-sans font-bold uppercase tracking-[0.2em] mb-4 text-text-secondary">Visual Theme</h3>

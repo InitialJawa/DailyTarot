@@ -58,6 +58,16 @@
         }
       },
       "required": ["date", "type", "cards", "createdAt"]
+    },
+    "EncyclopediaEntry": {
+      "title": "Encyclopedia Entry",
+      "description": "Cached interpretation for a tarot card in a specific position.",
+      "type": "object",
+      "properties": {
+        "interpretation": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["interpretation", "createdAt"]
     }
   },
   "firestore": {
@@ -68,6 +78,10 @@
     "users/{userId}/readings/{readingId}": {
       "schema": { "$ref": "#/entities/Reading" },
       "description": "Stores history of tarot readings for a user"
+    },
+    "encyclopedia_cache/{cardId}": {
+      "schema": { "$ref": "#/entities/EncyclopediaEntry" },
+      "description": "Caches AI interpretations for tarot cards"
     }
   }
 }
