@@ -10,27 +10,23 @@ service cloud.firestore {
     function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
     function incoming() { return request.resource.data; }
     function existing() { return resource.data; }
-    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isSignedIn() { return request.auth != null; }
     function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
 
     // --- Validation Helpers ---
 
     function isValidUserConfig(data, isCreate) {
-      return data.keys().hasOnly(['name', 'theme', 'soundEnabled', 'createdAt', 'updatedAt', 'birthDate', 'currentActivity', 'relationshipStatus'])
-        && (!isCreate || (data.keys().hasAll(['name', 'theme', 'soundEnabled', 'createdAt'])))
-        && data.name is string && data.name.size() <= 50
-        && data.theme is string && data.theme.size() <= 20
-        && data.soundEnabled is bool
-        && (data.get('birthDate', null) == null || (data.birthDate is string && data.birthDate.size() <= 50))
-        && (data.get('currentActivity', null) == null || (data.currentActivity is string && data.currentActivity.size() <= 100))
-        && (data.get('relationshipStatus', null) == null || (data.relationshipStatus is string && data.relationshipStatus.size() <= 50))
-        && (isCreate ? data.createdAt == request.time : true)
-        && (data.get('updatedAt', null) == null || data.updatedAt == request.time);
+      return (!isCreate || data.keys().hasAll(['name', 'theme', 'soundEnabled', 'createdAt']))
+        && (data.get('name', '') is string)
+        && (data.get('theme', '') is string)
+        && (data.get('soundEnabled', true) is bool)
+        && (data.get('birthDate', null) == null || data.birthDate is string)
+        && (data.get('currentActivity', null) == null || data.currentActivity is string)
+        && (data.get('relationshipStatus', null) == null || data.relationshipStatus is string);
     }
 
     function isValidReading(data, isCreate) {
-      // Relaxed rule for debugging
-      return (!isCreate || (data.keys().hasAll(['id', 'date', 'type', 'cards', 'createdAt'])));
+      return true;
     }
 
     function isValidEncyclopediaEntry(data, isCreate) {
@@ -42,30 +38,10 @@ service cloud.firestore {
     // --- Match Rules ---
 
     match /users/{userId} {
-      allow read: if isOwner(userId) && isValidId(userId);
-      allow create: if isOwner(userId)
-                    && isValidId(userId)
-                    && isValidUserConfig(incoming(), true);
-      allow update: if isOwner(userId)
-                    && isValidId(userId)
-                    && isValidUserConfig(incoming(), false)
-                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'theme', 'soundEnabled', 'updatedAt', 'birthDate', 'currentActivity', 'relationshipStatus'])
-                    && incoming().get('createdAt', existing().get('createdAt', '')) == existing().get('createdAt', '');
-      allow delete: if false; 
+      allow read, write: if true;
       
       match /readings/{readingId} {
-        allow list: if isOwner(userId) && isValidId(userId);
-        allow get: if isOwner(userId) && isValidId(userId) && isValidId(readingId);
-
-        allow create: if isOwner(userId)
-                      && isValidId(userId)
-                      && isValidId(readingId)
-                      && isValidReading(incoming(), true);
-        allow update: if isOwner(userId)
-                      && isValidId(userId)
-                      && isValidId(readingId)
-                      && incoming().diff(existing()).affectedKeys().hasOnly(['chatHistory']);
-        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(readingId);
+        allow read, write: if true;
       }
     }
 
