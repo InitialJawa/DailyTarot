@@ -1,0 +1,67 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Catch-All (Default Deny)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Core Primitives ---
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null && request.auth.token.email_verified == true; }
+    function isOwner(uid) { return isSignedIn() && request.auth.uid == uid; }
+
+    // --- Validation Helpers ---
+
+    function isValidUserConfig(data, isCreate) {
+      return data.keys().hasOnly(['name', 'theme', 'soundEnabled', 'createdAt', 'updatedAt'])
+        && (!isCreate || (data.keys().hasAll(['name', 'theme', 'soundEnabled', 'createdAt']) && data.keys().size() >= 4))
+        && data.name is string && data.name.size() <= 50
+        && data.theme is string && data.theme.size() <= 20
+        && data.soundEnabled is bool
+        && (isCreate ? data.createdAt == request.time : true)
+        && (data.get('updatedAt', null) == null || data.updatedAt == request.time);
+    }
+
+    function isValidReading(data, isCreate) {
+      return data.keys().hasOnly(['date', 'type', 'cards', 'question', 'interpretation', 'createdAt'])
+        && (!isCreate || (data.keys().hasAll(['date', 'type', 'cards', 'createdAt']) && data.keys().size() >= 4))
+        && data.date is string && data.date.size() <= 50
+        && data.type is string && data.type.size() <= 50
+        && data.cards is list && data.cards.size() <= 15
+        && (data.cards.size() == 0 || data.cards[0] is map)
+        && (data.get('question', null) == null || (data.question is string && data.question.size() <= 500))
+        && (data.get('interpretation', null) == null || (data.interpretation is string && data.interpretation.size() <= 5000))
+        && (isCreate ? data.createdAt == request.time : true);
+    }
+
+    // --- Match Rules ---
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) && isValidId(userId);
+      allow create: if isOwner(userId)
+                    && isValidId(userId)
+                    && isValidUserConfig(incoming(), true);
+      allow update: if isOwner(userId)
+                    && isValidId(userId)
+                    && isValidUserConfig(incoming(), false)
+                    && incoming().diff(existing()).affectedKeys().hasOnly(['name', 'theme', 'soundEnabled', 'updatedAt'])
+                    && incoming().get('createdAt', existing().get('createdAt', '')) == existing().get('createdAt', '');
+      allow delete: if false; 
+      
+      match /readings/{readingId} {
+        allow list: if isOwner(userId) && isValidId(userId);
+        allow get: if isOwner(userId) && isValidId(userId) && isValidId(readingId);
+
+        allow create: if isOwner(userId)
+                      && isValidId(userId)
+                      && isValidId(readingId)
+                      && isValidReading(incoming(), true);
+        allow update: if false; // Readings are immutable
+        allow delete: if isOwner(userId) && isValidId(userId) && isValidId(readingId);
+      }
+    }
+  }
+}

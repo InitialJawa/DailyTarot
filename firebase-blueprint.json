@@ -1,0 +1,73 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "User preferences and profile data.",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name of the user"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark-mystic", "minimalis", "alam"]
+        },
+        "soundEnabled": {
+          "type": "boolean"
+        },
+        "createdAt": {
+          "type": "string",
+          "description": "Timestamp of creation"
+        },
+        "updatedAt": {
+          "type": "string",
+          "description": "Timestamp of last update"
+        }
+      },
+      "required": ["name", "theme", "soundEnabled"]
+    },
+    "Reading": {
+      "title": "Tarot Reading",
+      "description": "A past tarot reading saved by the user.",
+      "type": "object",
+      "properties": {
+        "date": {
+          "type": "string",
+          "description": "ISO format date of the reading"
+        },
+        "type": {
+          "type": "string",
+          "description": "The type of spread used"
+        },
+        "cards": {
+          "type": "array",
+          "description": "List of drawn cards with positions",
+          "items": {
+            "type": "object"
+          }
+        },
+        "question": {
+          "type": "string"
+        },
+        "interpretation": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        }
+      },
+      "required": ["date", "type", "cards", "createdAt"]
+    }
+  },
+  "firestore": {
+    "users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Stores user config and profile"
+    },
+    "users/{userId}/readings/{readingId}": {
+      "schema": { "$ref": "#/entities/Reading" },
+      "description": "Stores history of tarot readings for a user"
+    }
+  }
+}

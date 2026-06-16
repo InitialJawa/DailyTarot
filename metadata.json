@@ -1,0 +1,6 @@
+{
+  "name": "Tarot Mystic",
+  "description": "Aplikasi pembacaan tarot lengkap dengan animasi, interpretasi AI, suara latar, dan riwayat.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
