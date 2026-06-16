@@ -12,9 +12,10 @@ interface ProfileModalProps {
   onClose: () => void;
   profile: UserProfile;
   updateProfile: (updates: Partial<UserProfile>) => void;
+  onLoadReading?: (reading: Reading) => void;
 }
 
-export function ProfileModal({ isOpen, onClose, profile, updateProfile }: ProfileModalProps) {
+export function ProfileModal({ isOpen, onClose, profile, updateProfile, onLoadReading }: ProfileModalProps) {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
@@ -164,7 +165,16 @@ export function ProfileModal({ isOpen, onClose, profile, updateProfile }: Profil
                 ) : (
                   <div className="space-y-4">
                     {[...profile.history].reverse().map(reading => (
-                      <div key={reading.id} className="p-4 rounded-xl bg-bg-secondary border border-text-secondary/10">
+                      <div 
+                        key={reading.id} 
+                        className={`p-4 rounded-xl bg-bg-secondary border border-text-secondary/10 transition-colors ${onLoadReading ? 'cursor-pointer hover:border-accent hover:bg-accent/5' : ''}`}
+                        onClick={() => {
+                          if (onLoadReading) {
+                            onLoadReading(reading);
+                            onClose();
+                          }
+                        }}
+                      >
                         <div className="flex justify-between items-start mb-2">
                           <div className="text-[10px] font-sans font-bold uppercase tracking-widest text-accent">{reading.type}</div>
                           <div className="text-[10px] opacity-50">

@@ -463,6 +463,12 @@ export default function App() {
         onClose={() => setIsProfileOpen(false)}
         profile={profile}
         updateProfile={handleUpdateProfile}
+        onLoadReading={(reading) => {
+          setSpreadType(reading.type as SpreadType);
+          setQuestion(reading.question || '');
+          setCurrentReading(reading);
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }}
       />
 
       <TarotEncyclopediaModal 
