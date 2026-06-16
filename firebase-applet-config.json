@@ -1,10 +1,10 @@
 {
-  "projectId": "gen-lang-client-0599933378",
-  "appId": "1:540520019171:web:c0cfad8806f756c31141d6",
-  "apiKey": "AIzaSyA-iRwvS84QcQYosi1PIEwmSQf50CSEZFw",
-  "authDomain": "gen-lang-client-0599933378.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-d99ed81b-9441-4b57-9b27-79271ce64eb6",
-  "storageBucket": "gen-lang-client-0599933378.firebasestorage.app",
-  "messagingSenderId": "540520019171",
-  "measurementId": ""
+  "projectId": "tarot-90cfe",
+  "appId": "1:434093521322:web:7e2ea4913e3c7ffd5513d3",
+  "apiKey": "AIzaSyD1cxPe89CjvoV0fki5yXbhqAnnjh1YNKQ",
+  "authDomain": "tarot-90cfe.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "tarot-90cfe.firebasestorage.app",
+  "messagingSenderId": "434093521322",
+  "measurementId": "G-N9MJN953XN"
 }
