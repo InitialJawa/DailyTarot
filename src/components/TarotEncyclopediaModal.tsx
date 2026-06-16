@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { majorArcana, TarotCard } from '../data/tarot';
-import { Book, X, ChevronRight, ChevronLeft, Sparkles, RefreshCw } from 'lucide-react';
+import { Book, X, ChevronRight, ChevronLeft, Sparkles, RefreshCw, Bird } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, auth } from '../lib/firebase';
@@ -196,7 +196,12 @@ export function TarotEncyclopediaModal({ isOpen, onClose }: TarotEncyclopediaMod
 
                      {isLoading ? (
                        <div className="flex-1 flex flex-col items-center justify-center gap-4 text-accent h-64">
-                         <Sparkles className="animate-spin" size={32} />
+                         <motion.div
+                           animate={{ y: [0, -10, 0] }}
+                           transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                         >
+                           <Bird size={36} className="opacity-80" strokeWidth={1.5} />
+                         </motion.div>
                          <p className="font-serif italic text-sm text-text-secondary">Menyelami makna rahasia dari {selectedCard.name}...</p>
                        </div>
                      ) : error ? (

@@ -13,7 +13,7 @@ import { SpreadType, UserProfile, Reading, ChatMessage } from './types';
 import { generateId } from './utils';
 import Markdown from 'react-markdown';
 import { motion, AnimatePresence } from 'motion/react';
-import { Share2, Settings, Sparkles, UserCircle, Book, MessageSquare } from 'lucide-react';
+import { Share2, Settings, Sparkles, UserCircle, Book, MessageSquare, Bird } from 'lucide-react';
 import { TarotCard } from './data/tarot';
 
 import { onAuthStateChanged, User } from 'firebase/auth';
@@ -371,7 +371,12 @@ export default function App() {
                    animate={{ opacity: 1 }}
                    className="mt-12 flex flex-col items-center gap-4 text-accent"
                  >
-                   <Sparkles className="animate-spin" size={32} />
+                   <motion.div
+                    animate={{ y: [0, -10, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                  >
+                    <Bird size={36} className="opacity-80" strokeWidth={1.5} />
+                  </motion.div>
                    <p className="font-serif italic text-lg text-text-secondary">Menyusun benang-benang takdir...</p>
                  </motion.div>
                )}

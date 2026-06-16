@@ -53,34 +53,15 @@ Tulis dalam format Markdown. Struktur:
 - Makna masing-masing kartu (dan posisinya jika relevan)
 - Kesimpulan dan pesan inspiratif.`;
 
-      const modelsToTry = [
-        "gemini-2.5-flash-lite",
-        "gemini-2.5-flash",
-        "gemini-3.0-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro",
-        "gemini-2.0-flash",
-        "gemini-2.5-pro"
-      ];
       let responseText = "";
-      let lastError = null;
-
-      for (const model of modelsToTry) {
-        try {
-          const response = await ai.models.generateContent({
-            model: model,
-            contents: prompt,
-          });
-          responseText = response.text || "";
-          break; // If successful, exit the loop
-        } catch (err: any) {
-          console.warn(`Model ${model} failed:`, err.message);
-          lastError = err;
-        }
-      }
-
-      if (!responseText) {
-        throw new Error(lastError?.message || "Semua model Gemini gagal merespons.");
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: prompt,
+        });
+        responseText = response.text || "";
+      } catch (err: any) {
+        throw new Error(err.message || "Failed to generate reading.");
       }
 
       res.json({ text: responseText });
@@ -108,22 +89,12 @@ Berikan penjelasan mendalam mengenai kartu: ${cardName} (${arcana} Arcana) dalam
 Jelaskan makna intinya, pengaruhnya dalam cinta, karir, spiritualitas, serta pesan kuncinya.
 Tuliskan jawabannya dalam format Markdown yang rapi dan mudah dibaca (gunakan judul, bullet points).`;
 
-      const modelsToTry = ["gemini-2.5-flash-lite", "gemini-2.5-flash", "gemini-1.5-flash"];
       let responseText = "";
-      let lastError = null;
-
-      for (const model of modelsToTry) {
-        try {
-          const response = await ai.models.generateContent({ model: model, contents: prompt });
-          responseText = response.text || "";
-          break;
-        } catch (err: any) {
-          lastError = err;
-        }
-      }
-
-      if (!responseText) {
-        throw new Error(lastError?.message || "Semua model Gemini gagal merespons.");
+      try {
+        const response = await ai.models.generateContent({ model: "gemini-2.5-flash", contents: prompt });
+        responseText = response.text || "";
+      } catch (err: any) {
+        throw new Error(err.message || "Failed to generate interpretation.");
       }
 
       res.json({ text: responseText });
@@ -194,33 +165,24 @@ Tuliskan balasan dalam format Markdown.`;
         }
       }
 
-      const modelsToTry = [
-        "gemini-2.5-flash",
-        "gemini-1.5-flash",
-        "gemini-1.5-pro"
-      ];
-      let responseText = "";
-      let lastError = null;
-
-      for (const model of modelsToTry) {
-        try {
-          const response = await ai.models.generateContent({
-            model: model,
-            contents: contents,
-            config: {
-              systemInstruction: systemInstruction,
-            }
-          });
-          responseText = response.text || "";
-          break;
-        } catch (err: any) {
-          console.warn(`Model ${model} failed for chat:`, err.message);
-          lastError = err;
-        }
+      // Ensure first role is 'user'
+      if (contents.length > 0 && contents[0].role === 'model') {
+        contents.unshift({ role: 'user', parts: [{ text: 'Halo' }] });
       }
 
-      if (!responseText) {
-        throw new Error(lastError?.message || "Gagal menghubungi Tarot Master.");
+      let responseText = "";
+      try {
+        const response = await ai.models.generateContent({
+          model: "gemini-2.5-flash",
+          contents: contents,
+          config: {
+            systemInstruction: systemInstruction,
+          }
+        });
+        responseText = response.text || "";
+      } catch (err: any) {
+        console.warn(`Model gemini-2.5-flash failed for chat:`, err.message);
+        throw err;
       }
 
       res.json({ text: responseText });

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Send, User as UserIcon, Sparkles } from 'lucide-react';
+import { X, Send, User as UserIcon, Sparkles, Bird } from 'lucide-react';
 import Markdown from 'react-markdown';
 import { Reading, ChatMessage } from '../types';
 import { generateId } from '../utils';
@@ -174,7 +174,12 @@ export function ChatMasterModal({ reading, isOpen, onClose, onSaveHistory }: Cha
             {isLoading && (
               <div className="flex gap-4 justify-start">
                 <div className="w-8 h-8 rounded-full bg-accent/10 border border-accent/20 flex items-center justify-center text-accent flex-shrink-0">
-                  <Sparkles size={14} className="animate-spin" />
+                  <motion.div
+                    animate={{ y: [0, -2, 0] }}
+                    transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+                  >
+                    <Bird size={14} />
+                  </motion.div>
                 </div>
                 <div className="bg-bg-primary border border-accent/30 text-text-primary/90 rounded-2xl rounded-tl-sm p-4 w-16 flex items-center justify-center">
                    <div className="flex gap-1">
