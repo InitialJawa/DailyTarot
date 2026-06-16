@@ -42,12 +42,29 @@ Tulis dalam format Markdown. Struktur:
 - Makna masing-masing kartu (dan posisinya jika relevan)
 - Kesimpulan dan pesan inspiratif.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: prompt,
-      });
+      const modelsToTry = ["gemini-1.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+      let responseText = "";
+      let lastError = null;
 
-      res.json({ text: response.text });
+      for (const model of modelsToTry) {
+        try {
+          const response = await ai.models.generateContent({
+            model: model,
+            contents: prompt,
+          });
+          responseText = response.text || "";
+          break; // If successful, exit the loop
+        } catch (err: any) {
+          console.warn(`Model ${model} failed:`, err.message);
+          lastError = err;
+        }
+      }
+
+      if (!responseText) {
+        throw new Error(lastError?.message || "Semua model Gemini gagal merespons.");
+      }
+
+      res.json({ text: responseText });
     } catch (error: any) {
       console.error("Error generating tarot reading:", error);
       res.status(500).json({ error: error.message || "Failed to generate reading." });

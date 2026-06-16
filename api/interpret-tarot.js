@@ -35,12 +35,29 @@ export default async function handler(req, res) {
 - Analisis per kartu dalam konteks tebaran.
 - Kesimpulan dan pesan inspiratif.`;
 
-    const response = await ai.models.generateContent({
-      model: "gemini-2.0-flash",
-      contents: prompt,
-    });
+    const modelsToTry = ["gemini-1.5-pro", "gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"];
+    let responseText = "";
+    let lastError = null;
 
-    res.json({ text: response.text });
+    for (const model of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: model,
+          contents: prompt,
+        });
+        responseText = response.text || "";
+        break; // If successful, exit the loop
+      } catch (err) {
+        console.warn(`Model ${model} failed:`, err?.message || err);
+        lastError = err;
+      }
+    }
+
+    if (!responseText) {
+      throw new Error(lastError?.message || "Semua model Gemini gagal merespons.");
+    }
+
+    res.json({ text: responseText });
   } catch (error) {
     console.error("Gemini API Error:", error);
     res.status(500).json({ error: error.message || "Failed to generate interpretation." });
